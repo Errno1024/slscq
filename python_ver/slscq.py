@@ -2,6 +2,7 @@ import json
 import random
 import argparse
 import time
+import math
 
 random.seed(time.time())
 
@@ -23,6 +24,7 @@ class Slscq:
     def get_beginning(self) -> str: return self.get_random_element('beginning')
     def get_body(self) -> str: return self.get_random_element('body')
     def get_ending(self) -> str: return self.get_random_element('ending')
+    def get_parallel_sentence_arr(self) -> str: return self.get_random_element('parallel_sentence_arr')
 
     def replace_xx(self, input_str: str,them: str) -> str:
         return input_str.replace('xx', them)
@@ -68,24 +70,58 @@ class Slscq:
         input_str = self.replace_xx(input_str, them)
         return input_str
 
+    def get_shuffled_bodies(self):
+        body = list(self.data['body'])
+        random.shuffle(body)
+        return body
+
     def gen(self, them: str = '年轻人买房', essay_num: int = 500) -> dict:
         end_num = begin_num = essay_num * 0.15
         body_num = essay_num * 0.7
+        
+        body_len_cap = (300, 500)
+        
+        parallel_sentence_rate = 0.25
+        
+        lower_bound = body_num // body_len_cap[1] + 1
+        upper_bound = math.ceil(body_num / body_len_cap[0])
+        body_parts = random.randrange(lower_bound, max(upper_bound, lower_bound + 1)) 
+        body_lens = sorted([random.randrange(0, body_num - body_parts * body_len_cap[0]) for i in range(body_parts)])
 
         title = self.replace_all(self.get_title(), them)
         begin = ''
-        body = ''
+        body = []
         end = ''
+        
+        sep = '\n\n    '
 
         while len(begin) < begin_num: begin += self.replace_all(self.get_beginning(), them)
-        while len(body) < body_num: body += self.replace_all(self.get_body(), them)
+        
+        parallel_sentence_arr = None
+        body_starts = self.get_shuffled_bodies()
+        for i, l in enumerate(body_lens):
+            if (body_parts - i) >= 3 and random.random() < parallel_sentence_rate:
+                parallel_sentence_arr = random.sample(self.get_parallel_sentence_arr(), random.randrange(3, body_parts - i + 1))
+            
+            l += body_len_cap[0]
+            if parallel_sentence_arr:
+                _body = self.replace_all(parallel_sentence_arr.pop(), them)
+            else:
+                if not body_starts:
+                    body_starts = self.get_shuffled_bodies()
+                _body = self.replace_all(body_starts.pop(), them)
+            while len(_body) < l: 
+                _body += self.replace_all(self.get_body(), them)
+            body.append(_body)
+        body = sep.join(body)
+
         while len(end) < end_num: end += self.replace_all(self.get_ending(), them)
 
         return {'title': title,'begin': begin,'body': body,'end': end}
     
     def gen_text(self, them: str = '年轻人买房', essay_num: int = 500) -> str:
         result = self.gen(them,essay_num)
-        return f"{result['title']}\n    {result['begin']}\n    {result['body']}\n    {result['end']}"
+        return f"{result['title']}\n\n    {result['begin']}\n\n    {result['body']}\n\n    {result['end']}"
 
 if __name__ == '__main__':
     paser = argparse.ArgumentParser(
