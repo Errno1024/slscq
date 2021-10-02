@@ -55,6 +55,11 @@ class Slscq:
             input_str = input_str.replace('sp', self.get_parallel_sentence(),1)
         return input_str
 
+    def replace_ad2(self, input_str: str) -> str:
+        while input_str.find('ad2') != -1:
+            input_str = input_str.replace('ad2', self.get_adverb(2),1)
+        return input_str
+
     def replace_p(self, input_str: str) -> str:
         while input_str.find('p') != -1:
             input_str = input_str.replace('p', self.get_phrase(),1)
@@ -66,6 +71,7 @@ class Slscq:
         input_str = self.replace_n(input_str)
         input_str = self.replace_ss(input_str)
         input_str = self.replace_sp(input_str)
+        input_str = self.replace_ad2(input_str)
         input_str = self.replace_p(input_str)
         input_str = self.replace_xx(input_str, them)
         return input_str
